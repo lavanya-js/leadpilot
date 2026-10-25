@@ -68,3 +68,24 @@ export const leadCreateSchema = z.object({
 
 // Stage changes go through their own endpoint, so edits can't change the stage.
 export const leadUpdateSchema = leadCreateSchema.omit({ stageId: true });
+
+const dueDate = z
+  .string({ message: "Pick a due date" })
+  .trim()
+  .refine((v) => !Number.isNaN(Date.parse(v)), { message: "Enter a valid date" })
+  .transform((v) => new Date(v));
+
+export const taskCreateSchema = z.object({
+  title: z.string().trim().min(2, "Title must be at least 2 characters").max(200),
+  dueDate,
+  leadId: z.string().trim().min(1).nullish().transform((v) => v || null),
+  assigneeId: z.string().trim().min(1).optional(), // only Admins may set this
+});
+
+export const taskUpdateSchema = z
+  .object({
+    title: z.string().trim().min(2, "Title must be at least 2 characters").max(200).optional(),
+    dueDate: dueDate.optional(),
+    completed: z.boolean({ message: "completed must be true or false" }).optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: "Nothing to update" });
