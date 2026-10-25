@@ -89,3 +89,11 @@ export const taskUpdateSchema = z
     completed: z.boolean({ message: "completed must be true or false" }).optional(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: "Nothing to update" });
+
+  export const contactCreateSchema = z.object({
+  name: z.string().trim().min(2, "Name must be at least 2 characters").max(120),
+  email,
+  phone,
+  title: optionalText(80),
+  companyId: z.string().trim().min(1).nullish().transform((v) => v || null),
+});
