@@ -9,3 +9,128 @@ datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("MEMBER") // ADMIN | MEMBER
+  createdAt    DateTime @default(now())
+
+  ownedLeads    Lead[]     @relation("LeadOwner")
+  assignedTasks Task[]     @relation("TaskAssignee")
+  createdTasks  Task[]     @relation("TaskCreator")
+  activities    Activity[]
+}
+
+model Stage {
+  id       String @id @default(cuid())
+  name     String @unique
+  position Int    @unique
+  kind     String @default("OPEN") // OPEN | WON | LOST
+  leads    Lead[]
+}
+
+model Company {
+  id         String    @id @default(cuid())
+  name       String
+  nameKey    String    @unique // normalized name, used for duplicate detection
+  domain     String?   @unique
+  industry   String?
+  phone      String?
+  notes      String?
+  archivedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  contacts Contact[]
+  leads    Lead[]
+}
+
+model Contact {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?  @unique
+  phone     String?
+  title     String?
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  leads Lead[]
+
+  @@index([companyId])
+}
+
+model Lead {
+  id         String    @id @default(cuid())
+  name       String
+  email      String?
+  phone      String?
+  source     String // Website | Referral | LinkedIn | Cold Call | Event
+  value      Int       @default(0) // deal value in INR
+  notes      String?
+  version    Int       @default(0) // optimistic lock for stage updates
+  archivedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  ownerId   String
+  owner     User     @relation("LeadOwner", fields: [ownerId], references: [id])
+  stageId   String
+  stage     Stage    @relation(fields: [stageId], references: [id])
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id])
+  contactId String?
+  contact   Contact? @relation(fields: [contactId], references: [id])
+
+  activities Activity[]
+  tasks      Task[]
+
+  @@index([ownerId])
+  @@index([stageId])
+  @@index([source])
+  @@index([companyId])
+  @@index([email])
+  @@index([archivedAt])
+}
+
+model Activity {
+  id        String   @id @default(cuid())
+  type      String // CALL | MEETING | EMAIL | NOTE | STAGE_CHANGE
+  body      String
+  createdAt DateTime @default(now())
+
+  leadId String
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([leadId, createdAt])
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  dueDate     DateTime
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  leadId      String?
+  lead        Lead?  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  assigneeId  String
+  assignee    User   @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  createdById String
+  createdBy   User   @relation("TaskCreator", fields: [createdById], references: [id])
+
+  @@index([assigneeId, dueDate])
+  @@index([leadId])
+}
+
+model IdempotencyKey {
+  key       String   @id
+  userId    String
+  createdAt DateTime @default(now())
+}
