@@ -46,4 +46,4 @@ next-env.d.ts
 # local database and test files
 *.db
 *.db-journal
-cookies.txt
+*cookies.txt
