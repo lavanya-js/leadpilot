@@ -34,6 +34,7 @@ The seed creates 6 pipeline stages, 6 companies, 36 leads with activities, and t
 
 - **Leads:** create, edit, archive, search, filter by stage/source/owner, pagination, CSV export
 - **Companies:** create, edit, archive (Admin), duplicate detection, search, pagination
+- **Contacts:** managed per company, unique email, search, delete (Admin)
 - **Pipeline:** configurable stages (New, Contacted, Qualified, Proposal, Won, Lost), safe stage moves
 - **Activity timeline:** calls, meetings, emails and notes; stage changes are logged automatically
 - **Tasks:** assignment, due dates, completion, overdue / upcoming / completed filters
@@ -108,6 +109,8 @@ Key relationships: a Lead has one owner (User), one Stage and optionally one Com
 | `GET, POST /api/leads/:id/activities` | Timeline |
 | `GET /api/leads/export` | CSV export (respects filters and access) |
 | `GET /api/stages` | Pipeline stages |
+| `GET, POST /api/contacts`, `GET, PUT, DELETE /api/contacts/:id` | Contacts (search, duplicate email check, delete is Admin only) |
+| `GET /api/users` | People a lead or task can be assigned to |
 | `GET, POST /api/tasks` | List (`status=overdue\|upcoming\|completed`) and create |
 | `PATCH, DELETE /api/tasks/:id` | Edit or complete, delete |
 | `GET /api/dashboard` | Role-scoped metrics |
@@ -119,9 +122,32 @@ Errors use one shape: `{ "error": { "message": "...", "details": { ... } } }`.
 - **Win rate** = Won ÷ (Won + Lost)
 - **Conversion rate** = Won ÷ all active leads
 
-## Project status and known limitations
+## Screens
 
-- The REST API is complete and manually tested for each rule above (validation, permissions, conflicts, duplicates).
-- Contacts are stored and linked to companies and leads; dedicated contact endpoints and the browser UI are still in progress.
+| Screen | Route | What it does |
+|---|---|---|
+| Login | `/login` | Sign in, with one-click demo accounts |
+| Dashboard | `/dashboard` | Totals, pipeline value by stage, win and conversion rates, leads by source, overdue and upcoming tasks |
+| Leads | `/leads` | Search, stage and source filters, pagination, CSV export |
+| Add lead | `/leads/new` | Validated form with duplicate-email check and double-submit protection |
+| Lead detail | `/leads/:id` | Stage bar, activity timeline, follow-up tasks, archive |
+| Pipeline | `/pipeline` | Board with a column per stage; drag a card or use its Move to menu |
+| Companies | `/companies` | List, search, add, archive (Admin) |
+| Company detail | `/companies/:id` | Edit company, manage its contacts, see its leads |
+| Tasks | `/tasks` | All, Overdue, Upcoming and Completed tabs; add, assign and complete tasks |
+
+## Tests
+
+```bash
+npm test
+```
+
+Vitest unit tests cover the duplicate-detection rule (company name and email normalization) and the role and record access rules for leads and tasks. API behaviour (validation errors, permission checks, stage conflicts, duplicates) was verified manually with curl against the seeded database.
+
+## Known limitations
+
 - Login throttling is in memory, so it resets when the server restarts.
-- Automated tests (Vitest) are still to be added.
+- The pipeline board loads the first 100 leads; the Leads page lists all of them.
+- Users come from the seed data; there is no user management or password reset screen.
+- Contacts are managed from the company page; the lead form links a lead to a company, not to a specific contact.
+- There are no automated end-to-end or API integration tests yet.
