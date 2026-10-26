@@ -10,6 +10,7 @@ type Me = { id: string; name: string; email: string; role: string };
 const NAV = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/leads", label: "Leads" },
+  { href: "/companies", label: "Companies" },
   { href: "/pipeline", label: "Pipeline" },
   { href: "/tasks", label: "Tasks" },
 ];
